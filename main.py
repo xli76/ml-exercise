@@ -4,6 +4,7 @@ from data_utils import *
 from clustering.kmeans import KMeans
 from regression.linear_regression import LinearRegression
 from classification.logistic_regression import LogisticRegression
+from classification.svm import SVM
 from pca import PCA
 
 FORMAT = '%(asctime)s[%(levelname)s]:%(message)s'
@@ -46,14 +47,30 @@ def run_classification():
     lr.fit(train_X, train_y)
     print("training score {}", lr.score(train_X, train_y))
     coef = lr.coef_
-    b, w = -coef[:2] / coef[2]
-    plot_hyperplane(w, b, train_X, train_y)
-    pred_y = lr.predict_proba(test_X)
-    test_score = lr.score(test_X, pred_y)
+    b, k = -coef[:2] / coef[2]
+    print(coef, k, b)
+    plot_hyperplane(k, b, train_X, train_y)
+    # pred_y = lr.predict_proba(test_X)
+    test_score = lr.score(test_X, test_y)
     print("test score {}", test_score)
+
+def run_svm():
+    X, y = generate_classification_data(100, [[0.6, 0.4], [1.8, 1.8]])
+    # plot_classification(X, y)
+    y[y == 0] = -1
+    train_X, train_y, test_X, test_y = train_test_split(X, y)
+    svm = SVM()
+    svm.fit(train_X, train_y)
+    print("training score {}", svm.score(train_X, train_y))
+    w = svm.w
+    k = -w[0] / w[1]
+    b = -svm.b / w[1]
+    print(w, k, b)
+    plot_hyperplane(k, b, train_X, train_y)
 
 if __name__ == '__main__':
     print("hello world")
     # run_clustering()
     # run_regression()
-    run_classification()
+    # run_classification()
+    run_svm()
