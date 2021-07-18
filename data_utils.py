@@ -79,3 +79,34 @@ def plot_hyperplane(w, b, X=None, y=None):
         plt.scatter(X[pos_idx, 0], X[pos_idx, 1], c='r')
         plt.scatter(X[~pos_idx, 0], X[~pos_idx, 1], c='g')
     plt.show()
+
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+def load_dataset():
+    columns = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation', 
+    'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country', 'label', 'type']
+    continus_columns = ['age','fnlwgt','education-num','capital-gain','capital-loss','hours-per-week']
+    discrete_columns = ['workclass','education','marital-status','occupation','relationship','race','sex','native-country']
+    train_data = pd.read_csv('data/adult.data', index_col=False, names=columns, delimiter=',')
+    test_data = pd.read_csv('data/adult.test', index_col=False, names=columns, delimiter=',')
+    train_data['type'] = 'train'
+    test_data['type'] = 'test'
+    train_data['label'] = train_data['label'].map(lambda x : 1 if x.strip() == '>50K' else 0)
+    test_data['label'] = test_data['label'].map(lambda x : 1 if x.strip() == '>50K.' else 0)
+    all_data = pd.concat([train_data, test_data], axis=0)
+    all_data = pd.get_dummies(all_data, columns=discrete_columns)
+    train_data = all_data[all_data['type']=='train'].drop(['type'], axis=1)
+    test_data = all_data[all_data['type']=='test'].drop(['type'], axis=1)
+
+    for col in continus_columns:
+        ss = StandardScaler()
+        train_data[col] = ss.fit_transform(train_data[[col]])
+        test_data[col] = ss.transform(test_data[[col]])
+
+    train_x = train_data.drop(['label'], axis=1)
+    train_y = train_data['label']
+    test_x = test_data.drop(['label'], axis=1)
+    test_y = test_data['label']
+
+    return train_x, train_y, test_x, test_y
