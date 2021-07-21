@@ -1,9 +1,9 @@
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.layers.experimental import preprocessing
 
 def load_dataset():
     columns = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation', 
@@ -24,13 +24,20 @@ def load_dataset():
     embedding_inputs = []
     embedding_cols = []
     oht_cols = []
+    oht_data = None
     for col in categorical_columns:
         # 低维离散特征
         vocab = pd.unique(all_data[col])
         input_dim = len(vocab)
         if input_dim <= 5:
             oht = OneHotEncoder()
-            all_data[col] = oht.fit_transform(all_data[[col]]).todense()
+            # all_data[col] = oht.fit_transform(all_data[[col]]).todense()
+            oht_encode = oht.fit_transform(all_data[[col]]).todense()
+            all_data[col] = oht_encode
+            if oht_data is None:
+                oht_data = oht_encode
+            else:
+                oht_data = np.hstack([oht_data, oht_encode])
             oht_cols.append(col)
         else:
             # embedding_inputs.append((col, input_dim, int(input_dim*0.4)))
@@ -51,11 +58,13 @@ def load_dataset():
     
     # one-hot, 连续变量, embedding
     train_x = x[:train_size]
-    train_x_oht = train_x[oht_cols].values
+    # train_x_oht = train_x[oht_cols].values
+    train_x_oht = oht_data[:train_size]
     train_x_cont = train_x[continus_columns].values
     train_x_embed = train_x[embedding_cols].values
     test_x = x[train_size:]
-    test_x_oht = test_x[oht_cols].values
+    # test_x_oht = test_x[oht_cols].values
+    test_x_oht = oht_data[train_size:]
     test_x_cont = test_x[continus_columns].values
     test_x_embed = test_x[embedding_cols].values
     train_y, test_y = y[:train_size].values, y[train_size:].values
@@ -101,7 +110,7 @@ class WideDeepModel(tf.keras.Model):
         return out
 
 def create_model(embedding_inputs):
-    oht_input = keras.layers.Input(shape=(2,)) #(2, 5)
+    oht_input = keras.layers.Input(shape=(7,)) #(2, 5)
     conti_input = keras.layers.Input(shape=(5,))
     embed_input = keras.layers.Input(shape=(6,))
     embed_inputs = keras.layers.Lambda(lambda x: [x[:, i] for i in range(6)])(embed_input)
